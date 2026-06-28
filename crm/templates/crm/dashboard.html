@@ -1,6 +1,15 @@
 {% extends 'crm/base.html' %}
 {% block content %}
 
+{% if emergency_count %}
+<div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+    <span class="fs-4 me-2">🚨</span>
+    <div>
+        <strong>{{ emergency_count }} emergency call{{ emergency_count|pluralize }}</strong> pending — check Appointments.
+    </div>
+</div>
+{% endif %}
+
 <!-- Stats Cards -->
 <div class="row g-3 mb-4">
     <div class="col-md-3">
@@ -24,9 +33,9 @@
     <div class="col-md-3">
         <div class="card border-0 shadow-sm">
             <div class="card-body">
-                <h6 class="text-muted mb-1">QuickBooks</h6>
-                <p class="mb-0 small mt-2 text-muted">🔗 QBO sync ready</p>
-                <small class="text-info">Connect in Settings</small>
+                <h6 class="text-muted mb-1">Pending Appointments</h6>
+                <h3 class="mb-0">{{ pending_appointments|length }}</h3>
+                <small class="text-danger">{{ emergency_count }} emergencies</small>
             </div>
         </div>
     </div>
@@ -34,18 +43,64 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body">
                 <h6 class="text-muted mb-1">Phone System</h6>
-                <p class="mb-0 small mt-2 text-muted">📞 Twilio ready</p>
-                <small class="text-info">Configure phone #</small>
+                <p class="mb-0 small mt-2">🤖 <a href="{% url 'call_simulator' %}">IVR Call Simulator</a></p>
+                <small class="text-info">Test the chatbot</small>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Quick Actions -->
-<div class="d-flex gap-2 mb-4">
+<div class="d-flex gap-2 mb-4 flex-wrap">
     <a href="{% url 'call_log_create' %}" class="btn btn-primary">📞 Log a Call</a>
+    <a href="{% url 'call_simulator' %}" class="btn btn-success">🤖 Test Call Bot</a>
     <a href="{% url 'client_list' %}" class="btn btn-outline-primary">👥 View Clients</a>
+    <a href="{% url 'appointment_list' %}" class="btn btn-outline-warning">📅 Appointments</a>
 </div>
+
+<!-- Pending Appointments -->
+{% if pending_appointments %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">⏳ Pending Appointments</h6>
+        <a href="{% url 'appointment_list' %}" class="small">View all →</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Phone</th>
+                        <th>Type</th>
+                        <th>Reason</th>
+                        <th>Source</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for apt in pending_appointments %}
+                    <tr class="{% if apt.is_emergency %}table-danger{% endif %}">
+                        <td><strong>{{ apt.caller_name }}</strong></td>
+                        <td>{{ apt.caller_phone }}</td>
+                        <td>
+                            {% if apt.is_emergency %}
+                                <span class="badge bg-danger">🚨 Emergency</span>
+                            {% else %}
+                                <span class="badge bg-info">Standard</span>
+                            {% endif %}
+                        </td>
+                        <td class="small">{{ apt.reason|truncatewords:8 }}</td>
+                        <td>{% if apt.from_ivr %}<span class="badge bg-dark">🤖 IVR</span>{% else %}Manual{% endif %}</td>
+                        <td><a href="{% url 'appointment_detail' apt.id %}" class="btn btn-sm btn-outline-primary">View</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Recent Calls -->
 <div class="card border-0 shadow-sm">
@@ -63,8 +118,9 @@
                         <th>Caller</th>
                         <th>Phone</th>
                         <th>Type</th>
+                        <th>Inquiry</th>
                         <th>Status</th>
-                        <th>Notes</th>
+                        <th>Source</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -80,6 +136,7 @@
                         </td>
                         <td>{{ call.caller_phone }}</td>
                         <td><span class="badge bg-secondary">{{ call.get_call_type_display }}</span></td>
+                        <td><span class="badge bg-light text-dark">{{ call.get_inquiry_type_display }}</span></td>
                         <td>
                             {% if call.is_new_client %}
                                 <span class="badge badge-new">🆕 New</span>
@@ -87,7 +144,7 @@
                                 <span class="badge badge-existing">✅ Existing</span>
                             {% endif %}
                         </td>
-                        <td class="small text-muted">{{ call.notes|truncatewords:8 }}</td>
+                        <td>{% if call.from_ivr %}<span class="badge bg-dark">🤖</span>{% else %}📝{% endif %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -96,7 +153,7 @@
         {% else %}
         <div class="text-center py-5 text-muted">
             <p class="mb-1">📞 No calls logged yet.</p>
-            <small>Log your first call to get started.</small>
+            <small>Use the Call Simulator or Log a Call to get started.</small>
         </div>
         {% endif %}
     </div>

@@ -24,8 +24,10 @@
             <div class="logo">🏠 <span>{{ company_name }}</span></div>
             <nav class="px-2">
                 <a href="{% url 'dashboard' %}" class="{% if page_title == 'Dashboard' %}active{% endif %}">📊 Dashboard</a>
+                <a href="{% url 'appointment_list' %}" class="{% if page_title == 'Appointments' %}active{% endif %}">📅 Appointments</a>
                 <a href="{% url 'client_list' %}" class="{% if page_title == 'Clients' %}active{% endif %}">👥 Clients</a>
                 <a href="{% url 'call_log_create' %}" class="{% if page_title == 'Log a Call' %}active{% endif %}">📞 Log a Call</a>
+                <a href="{% url 'call_simulator' %}" class="{% if page_title == 'Call Simulator' %}active{% endif %}">🤖 Call Simulator</a>
                 <hr style="border-color: #2d3a4e;">
                 <a href="/admin/" target="_blank">⚙️ Admin Panel</a>
                 <form method="post" action="{% url 'logout' %}">

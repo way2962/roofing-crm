@@ -1,0 +1,54 @@
+{% extends 'crm/base.html' %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h5 class="mb-0">
+                        {% if appointment.is_emergency %}🚨{% else %}📅{% endif %}
+                        {{ appointment.caller_name }}
+                    </h5>
+                    <span class="badge fs-6
+                        {% if appointment.status == 'pending' %}bg-warning text-dark
+                        {% elif appointment.status == 'confirmed' %}bg-primary
+                        {% elif appointment.status == 'completed' %}bg-success
+                        {% else %}bg-secondary{% endif %}">
+                        {{ appointment.get_status_display }}
+                    </span>
+                </div>
+
+                <table class="table table-sm">
+                    <tr><th>Phone</th><td>{{ appointment.caller_phone }}</td></tr>
+                    <tr><th>Address</th><td>{{ appointment.address|default:"—" }}</td></tr>
+                    <tr><th>Emergency?</th>
+                        <td>{% if appointment.is_emergency %}<span class="badge bg-danger">Yes</span>{% else %}No{% endif %}</td>
+                    </tr>
+                    <tr><th>Reason</th><td>{{ appointment.reason|linebreaks }}</td></tr>
+                    {% if appointment.notes %}
+                    <tr><th>Notes</th><td>{{ appointment.notes|linebreaks }}</td></tr>
+                    {% endif %}
+                    <tr><th>Scheduled</th><td>{{ appointment.scheduled_date|default:"Not yet scheduled" }}</td></tr>
+                    <tr><th>Source</th><td>{% if appointment.from_ivr %}🤖 Phone IVR{% else %}📝 Manual{% endif %}</td></tr>
+                    <tr><th>Created</th><td>{{ appointment.created_at|date:"F j, Y g:i A" }}</td></tr>
+                    <tr><th>Client Match</th>
+                        <td>
+                            {% if appointment.client %}
+                                ✅ <a href="{% url 'client_detail' appointment.client.id %}">{{ appointment.client.name }}</a>
+                            {% else %}
+                                🆕 No matched client
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="d-flex gap-2">
+                    <a href="{% url 'appointment_list' %}" class="btn btn-outline-secondary">← All Appointments</a>
+                    <a href="/admin/crm/appointment/{{ appointment.id }}/change/" target="_blank" class="btn btn-outline-primary">⚙️ Update in Admin</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

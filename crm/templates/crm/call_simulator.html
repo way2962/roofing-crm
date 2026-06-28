@@ -1,0 +1,194 @@
+{% extends 'crm/base.html' %}
+{% block content %}
+
+<div class="row g-4">
+    <!-- Simulator -->
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h5 class="mb-3">📞 Call Simulator</h5>
+                <p class="text-muted small mb-3">Simulate an incoming phone call to test the IVR chatbot flow.</p>
+
+                <!-- Step 1: Phone number -->
+                <div id="sim-step-1" class="sim-step">
+                    <div class="mb-3">
+                        <label class="form-label">Caller's Phone Number</label>
+                        <input type="text" id="sim-phone" class="form-control" placeholder="(555) 123-4567" value="(555) 123-4567">
+                    </div>
+                    <button class="btn btn-primary" onclick="simLookup()">📞 Call comes in</button>
+                </div>
+
+                <!-- Step 2: Lookup result (shown after step 1) -->
+                <div id="sim-step-2" class="sim-step d-none mt-3">
+                    <div id="sim-lookup-result" class="alert mb-3"></div>
+                </div>
+
+                <!-- Step 3: New client form -->
+                <div id="sim-step-new" class="sim-step d-none mt-3">
+                    <hr>
+                    <h6>🆕 New Caller Flow</h6>
+                    <div class="mb-2">
+                        <label class="form-label">Name</label>
+                        <input type="text" id="sim-new-name" class="form-control" placeholder="John Smith">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Address</label>
+                        <input type="text" id="sim-new-address" class="form-control" placeholder="123 Main St, City">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Inquiry Type</label>
+                        <select id="sim-new-inquiry" class="form-select">
+                            <option value="general">General Question</option>
+                            <option value="estimate">Estimate / Quote</option>
+                            <option value="service">Service / Repair</option>
+                            <option value="emergency">🚨 Emergency</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Details</label>
+                        <textarea id="sim-new-notes" class="form-control" rows="2" placeholder="What are they calling about?"></textarea>
+                    </div>
+                    <button class="btn btn-success" onclick="simSubmitNew()">✅ Complete Call</button>
+                </div>
+
+                <!-- Step 3: Existing client form -->
+                <div id="sim-step-existing" class="sim-step d-none mt-3">
+                    <hr>
+                    <h6>✅ Existing Client Flow</h6>
+                    <div class="mb-2">
+                        <label class="form-label">Inquiry Type</label>
+                        <select id="sim-ex-inquiry" class="form-select">
+                            <option value="general">General Question</option>
+                            <option value="estimate">Estimate / Quote</option>
+                            <option value="service">Service / Repair</option>
+                            <option value="emergency">🚨 Emergency</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Details</label>
+                        <textarea id="sim-ex-notes" class="form-control" rows="2" placeholder="What are they calling about?"></textarea>
+                    </div>
+                    <button class="btn btn-success" onclick="simSubmitExisting()">✅ Complete Call</button>
+                </div>
+
+                <!-- Result -->
+                <div id="sim-result" class="d-none mt-4 p-3 rounded bg-light"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Simulated Calls -->
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">📋 Recent IVR Calls</h6>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_sim_calls %}
+                <div class="list-group list-group-flush">
+                    {% for call in recent_sim_calls %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ call.caller_name|default:"Unknown" }}</strong>
+                            <small class="text-muted">{{ call.created_at|date:"g:i A" }}</small>
+                        </div>
+                        <small class="text-muted">{{ call.caller_phone }}</small>
+                        {% if call.is_new_client %}
+                            <span class="badge badge-new ms-2">🆕 New</span>
+                        {% else %}
+                            <span class="badge badge-existing ms-2">✅ Existing</span>
+                        {% endif %}
+                        <span class="badge bg-secondary ms-1">{{ call.get_inquiry_type_display }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <small>No simulated calls yet.</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Twilio Setup Guide -->
+<div class="card border-0 shadow-sm mt-4">
+    <div class="card-body p-4">
+        <h6>🔌 Go Live with a Real Phone Number</h6>
+        <p class="text-muted small">To replace the simulator with a real phone line:</p>
+        <ol class="small">
+            <li>Sign up at <a href="https://twilio.com" target="_blank">twilio.com</a> (free, ~$1/month for a number)</li>
+            <li>Buy a phone number in the Twilio console</li>
+            <li>Set the voice webhook to: <code>https://thoangai.pythonanywhere.com/twilio/voice/</code></li>
+            <li>Install the Twilio Python package: <code>pip install twilio</code></li>
+            <li>Update the Django app <a href="/admin/" target="_blank">Admin Panel</a> with sample clients</li>
+        </ol>
+        <p class="small text-muted mb-0">The IVR will automatically look up callers and route them — no code changes needed.</p>
+    </div>
+</div>
+
+<script>
+async function simLookup() {
+    const phone = document.getElementById('sim-phone').value;
+    const resp = await fetch('/twilio/sim-lookup/?phone=' + encodeURIComponent(phone));
+    const data = await resp.json();
+
+    document.getElementById('sim-step-2').classList.remove('d-none');
+    const resultDiv = document.getElementById('sim-lookup-result');
+
+    if (data.client_found) {
+        resultDiv.className = 'alert alert-success mb-3';
+        resultDiv.innerHTML = `📞 Call from <strong>${data.name}</strong> (${data.phone}) — <span class="badge badge-existing">Existing Client</span>`;
+        document.getElementById('sim-step-new').classList.add('d-none');
+        document.getElementById('sim-step-existing').classList.remove('d-none');
+        document.getElementById('sim-ex-notes').dataset.phone = phone;
+    } else {
+        resultDiv.className = 'alert alert-warning mb-3';
+        resultDiv.innerHTML = `📞 Call from <strong>${phone}</strong> — <span class="badge badge-new">🆕 New Caller</span>`;
+        document.getElementById('sim-step-new').classList.remove('d-none');
+        document.getElementById('sim-step-existing').classList.add('d-none');
+    }
+}
+
+async function simSubmitNew() {
+    const phone = document.getElementById('sim-phone').value;
+    const name = document.getElementById('sim-new-name').value || 'New Caller';
+    const address = document.getElementById('sim-new-address').value;
+    const inquiry = document.getElementById('sim-new-inquiry').value;
+    const notes = document.getElementById('sim-new-notes').value;
+
+    const resp = await fetch('/twilio/sim-submit/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+        body: JSON.stringify({phone, name, flow: 'new', inquiry, address, question: notes})
+    });
+    showResult(resp, phone, name);
+}
+
+async function simSubmitExisting() {
+    const phone = document.getElementById('sim-phone').value;
+    const inquiry = document.getElementById('sim-ex-inquiry').value;
+    const notes = document.getElementById('sim-ex-notes').value;
+
+    const resp = await fetch('/twilio/sim-submit/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}'},
+        body: JSON.stringify({phone, name: '', flow: 'existing', inquiry, question: notes})
+    });
+    showResult(resp, phone, 'Existing Client');
+}
+
+async function showResult(resp, phone, name) {
+    const data = await resp.json();
+    const resultDiv = document.getElementById('sim-result');
+    resultDiv.classList.remove('d-none');
+    if (data.status === 'ok') {
+        resultDiv.innerHTML = `<div class="alert alert-success mb-0">✅ Call logged successfully for <strong>${name}</strong> (${phone}). <a href="/" class="alert-link">View in Dashboard</a></div>`;
+        setTimeout(() => location.reload(), 2000);
+    } else {
+        resultDiv.innerHTML = `<div class="alert alert-danger mb-0">❌ Error: ${data.message}</div>`;
+    }
+}
+</script>
+{% endblock %}
