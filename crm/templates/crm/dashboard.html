@@ -1,0 +1,104 @@
+{% extends 'crm/base.html' %}
+{% block content %}
+
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-1">Total Clients</h6>
+                <h3 class="mb-0">{{ client_count }}</h3>
+                <small class="text-success">{{ active_client_count }} active</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-1">Calls Today</h6>
+                <h3 class="mb-0">{{ today_calls }}</h3>
+                <small class="text-warning">{{ new_clients_today }} new callers</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-1">QuickBooks</h6>
+                <p class="mb-0 small mt-2 text-muted">🔗 QBO sync ready</p>
+                <small class="text-info">Connect in Settings</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h6 class="text-muted mb-1">Phone System</h6>
+                <p class="mb-0 small mt-2 text-muted">📞 Twilio ready</p>
+                <small class="text-info">Configure phone #</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="d-flex gap-2 mb-4">
+    <a href="{% url 'call_log_create' %}" class="btn btn-primary">📞 Log a Call</a>
+    <a href="{% url 'client_list' %}" class="btn btn-outline-primary">👥 View Clients</a>
+</div>
+
+<!-- Recent Calls -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Recent Calls</h6>
+        <span class="text-muted small">{{ recent_calls|length }} calls</span>
+    </div>
+    <div class="card-body p-0">
+        {% if recent_calls %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Time</th>
+                        <th>Caller</th>
+                        <th>Phone</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for call in recent_calls %}
+                    <tr>
+                        <td class="small text-nowrap">{{ call.created_at|date:"M j, g:i A" }}</td>
+                        <td>
+                            {% if call.client %}
+                                <a href="{% url 'client_detail' call.client.id %}">{{ call.caller_name|default:call.client.name }}</a>
+                            {% else %}
+                                {{ call.caller_name|default:"Unknown" }}
+                            {% endif %}
+                        </td>
+                        <td>{{ call.caller_phone }}</td>
+                        <td><span class="badge bg-secondary">{{ call.get_call_type_display }}</span></td>
+                        <td>
+                            {% if call.is_new_client %}
+                                <span class="badge badge-new">🆕 New</span>
+                            {% else %}
+                                <span class="badge badge-existing">✅ Existing</span>
+                            {% endif %}
+                        </td>
+                        <td class="small text-muted">{{ call.notes|truncatewords:8 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <p class="mb-1">📞 No calls logged yet.</p>
+            <small>Log your first call to get started.</small>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

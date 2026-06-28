@@ -1,0 +1,61 @@
+{% extends 'crm/base.html' %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h5 class="mb-3">📞 Log a Phone Call</h5>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Phone Number</label>
+                        {{ form.caller_phone }}
+                        <div id="phone-lookup-result" class="mt-1"></div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Caller Name</label>
+                            {{ form.caller_name }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Call Type</label>
+                            {{ form.call_type }}
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <div class="form-check">
+                                {{ form.is_new_client }}
+                                <label class="form-check-label small">New Client?</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        {{ form.notes }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Duration (seconds)</label>
+                        {{ form.duration_seconds }}
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save Call Record</button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sample Data Note -->
+        <div class="alert alert-info mt-3">
+            <strong>💡 Tip:</strong> Enter a phone number to try the live lookup. Add sample clients via the
+            <a href="/admin/" target="_blank">Admin Panel</a> first (username/password created during setup).
+        </div>
+    </div>
+</div>
+{% endblock %}
